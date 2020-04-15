@@ -60,9 +60,6 @@ public class Main {
 	private static HashMap<String, String> commandLineSettings;
 	private static ArrayList<String> commandLineValues;
 
-
-
-
 	public static void main(String[] args) {
 
 		commandLineFlags = new HashSet<String>();

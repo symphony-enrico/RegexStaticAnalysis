@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -21,12 +23,8 @@ import util.RangeSet.Range;
 
 public class CharacterPropertyParser {
 
-	private final String FILE_PATH = "../data/";
-	
 	private final String FILE_NAME = "predef_ranges.txt";
 
-	private final String FILE;
-	
 	public static final int MIN_16UNICODE = 0;
 	public static final int MAX_16UNICODE = 65536;
 	
@@ -42,9 +40,6 @@ public class CharacterPropertyParser {
 	private final HashSet<String> caseInsensitiveSuffixes;
 	
 	public CharacterPropertyParser(String regex, int index) {
-		URL binUrl = CharacterPropertyParser.class.getClassLoader().getResource("");
-		String binAbsolutePath = binUrl.getPath();
-		this.FILE = binAbsolutePath + FILE_PATH + FILE_NAME;
 
 		this.prefixToSuffixesToRanges = new HashMap<String, HashMap<String, RangeSet>>();
 		this.caseInsensitivePrefixes = new HashSet<String>();
@@ -57,84 +52,69 @@ public class CharacterPropertyParser {
 	
 	
 	private void readData() {
-		try {
-			BufferedReader fileReader = new BufferedReader(new FileReader(new File(FILE)));
-			try {
-				while (fileReader.ready()) {
-					String line = fileReader.readLine();
-					String fields[] = line.split(":");
-					String prefixesStr = fields[0];
-					String prefixCS = fields[1];
-					String suffixesStr = fields[2];
-					String suffixCS = fields[3];
-					String rangesStr = fields[4];
-					String[] ranges = rangesStr.split(",");
-					RangeSet rangeSet = new RangeSet(MIN_16UNICODE, MAX_16UNICODE);
-					/* We first put the Ranges in a separate list, so we only have to union (and so merge) once */
-					List<Range> rangesToAdd = new LinkedList<Range>();
-					for (String range : ranges) {
-						if (range.contains("-")) {
-							int index = range.indexOf("-");
-							String minBoundStr = range.substring(0, index);
-							String maxBoundStr = range.substring(index + 1);
-							int minBound = Integer.parseInt(minBoundStr);
-							int maxBound = Integer.parseInt(maxBoundStr);
-							rangesToAdd.add(rangeSet.createRange(minBound, maxBound + 1));
-						} else {
-							int rangeInt = Integer.parseInt(range);
-							rangesToAdd.add(rangeSet.createRange(rangeInt));
-						}
+			InputStream inputStream = getClass().getClassLoader().getResourceAsStream(FILE_NAME);
+			try(BufferedReader fileReader = new BufferedReader(new InputStreamReader(inputStream))) {
+				String line = fileReader.readLine();
+				String fields[] = line.split(":");
+				String prefixesStr = fields[0];
+				String prefixCS = fields[1];
+				String suffixesStr = fields[2];
+				String suffixCS = fields[3];
+				String rangesStr = fields[4];
+				String[] ranges = rangesStr.split(",");
+				RangeSet rangeSet = new RangeSet(MIN_16UNICODE, MAX_16UNICODE);
+				/* We first put the Ranges in a separate list, so we only have to union (and so merge)
+				once */
+				List<Range> rangesToAdd = new LinkedList<Range>();
+				for (String range : ranges) {
+					if (range.contains("-")) {
+						int index = range.indexOf("-");
+						String minBoundStr = range.substring(0, index);
+						String maxBoundStr = range.substring(index + 1);
+						int minBound = Integer.parseInt(minBoundStr);
+						int maxBound = Integer.parseInt(maxBoundStr);
+						rangesToAdd.add(rangeSet.createRange(minBound, maxBound + 1));
+					} else {
+						int rangeInt = Integer.parseInt(range);
+						rangesToAdd.add(rangeSet.createRange(rangeInt));
 					}
-					rangeSet.union(rangesToAdd);
-					
-					String prefixes[] = prefixesStr.split(",");
-					for (String prefix : prefixes) {
-						String suffixes[] = suffixesStr.split(",");
-						for (String suffix : suffixes) {
-							if (prefixCS.equals("false")) {
-								caseInsensitivePrefixes.add(prefix);
-							}
-							if (suffixCS.equals("false")) {
-								caseInsensitiveSuffixes.add(suffix);
-							}
-							
-							if (prefixToSuffixesToRanges.containsKey(prefix)) {
-								/* Get suffixes currently associated with prefix */
-								HashMap<String, RangeSet> newSuffixesToRanges = prefixToSuffixesToRanges.get(prefix);
-								if (newSuffixesToRanges.containsKey(suffix)) {
-									RangeSet oldRangesSet = newSuffixesToRanges.get(suffix);
-									if (!oldRangesSet.equals(rangeSet)) {
-										throw new RuntimeException("Contradicting ranges for prefix and suffix");
-									}
-								} else {
-									newSuffixesToRanges.put(suffix, rangeSet);
-									prefixToSuffixesToRanges.put(prefix, newSuffixesToRanges);
+				}
+				rangeSet.union(rangesToAdd);
+
+				String prefixes[] = prefixesStr.split(",");
+				for (String prefix : prefixes) {
+					String suffixes[] = suffixesStr.split(",");
+					for (String suffix : suffixes) {
+						if (prefixCS.equals("false")) {
+							caseInsensitivePrefixes.add(prefix);
+						}
+						if (suffixCS.equals("false")) {
+							caseInsensitiveSuffixes.add(suffix);
+						}
+
+						if (prefixToSuffixesToRanges.containsKey(prefix)) {
+							/* Get suffixes currently associated with prefix */
+							HashMap<String, RangeSet> newSuffixesToRanges = prefixToSuffixesToRanges.get(prefix);
+							if (newSuffixesToRanges.containsKey(suffix)) {
+								RangeSet oldRangesSet = newSuffixesToRanges.get(suffix);
+								if (!oldRangesSet.equals(rangeSet)) {
+									throw new RuntimeException("Contradicting ranges for prefix and suffix");
 								}
-								
 							} else {
-								HashMap<String, RangeSet> newSuffixesToRanges = new HashMap<String, RangeSet>();
 								newSuffixesToRanges.put(suffix, rangeSet);
 								prefixToSuffixesToRanges.put(prefix, newSuffixesToRanges);
 							}
+
+						} else {
+							HashMap<String, RangeSet> newSuffixesToRanges = new HashMap<String, RangeSet>();
+							newSuffixesToRanges.put(suffix, rangeSet);
+							prefixToSuffixesToRanges.put(prefix, newSuffixesToRanges);
 						}
 					}
-					
-					
 				}
-			} catch (IOException ioe) {
-				ioe.printStackTrace();
-			} finally {
-				try {
-					fileReader.close();
-				} catch (IOException e) {
-					
-					e.printStackTrace();
-				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-		} catch (FileNotFoundException e) {
-			System.err.println("The file " + FILE + " was not found in " + System.getProperty("user.dir"));
-			e.printStackTrace();
-		}
 	}
 	
 	public RangeSet parseCharacterPropertyIterative(String characterProperty) {

@@ -30,6 +30,24 @@ will test the matching time of the regex `ab*b*cd*d*` with the input strings:
 It will print the iteration, length of the input string and matching time with each iteration.
 This regex will have quadratic matching time.
 
+### Use as an API callable by Java
+
+You can import the project as a maven dependency (but you must install it in your local maven repository, as it is not on Maven Central yet):
+
+```xml
+ <dependency>
+   	<groupId>nicolaasweideman</groupId>
+    <artifactId>regex-static-analysis</artifactId>
+    <version>1.0-SNAPSHOT</version>
+ </dependency>
+```
+
+Then use it:
+
+```java
+AnalysisDriverAPI api = AnalysisDriverAPI.builder().build(); // the builder can be used to override default parameters too
+Boolean result = api.isVulnerable("^(a+)+$"); // it can throw AnalysisException for any kind of errors (parsing problem, timeouts...)
+```
 
 ## Motivation
 For certain regexes, some regular expression matchers are vulnerable to a phenomenon known as regular expression denial of service (ReDoS).

@@ -18,3 +18,5 @@ test_framework/stored_test_results/*
 hs_err_pid*
 
 *.swp
+target/*
+.idea/*

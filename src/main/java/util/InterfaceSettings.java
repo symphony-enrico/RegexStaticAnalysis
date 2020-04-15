@@ -5,7 +5,8 @@ public class InterfaceSettings {
 	public enum InputType {
 		USER_INPUT,
 		FILE_INPUT,
-		COMMAND_LINE_INPUT
+		COMMAND_LINE_INPUT,
+		API_CALL
 	}
 	
 	private final InputType inputType;

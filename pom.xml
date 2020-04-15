@@ -31,6 +31,20 @@
             <artifactId>jgrapht-ext</artifactId>
             <version>1.4.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.6.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- For comparison in test -->
+        <dependency>
+            <groupId>com.github.jkutner</groupId>
+            <artifactId>saferegex</artifactId>
+            <version>1.0.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
